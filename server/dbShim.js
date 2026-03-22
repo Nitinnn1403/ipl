@@ -39,55 +39,97 @@ function formatRows(rows) {
 
 function compilePostgresQuery(query) {
   let paramCount = 1;
-  // SQLite allows double quotes for string literals; Postgres strictly enforces single quotes.
   let cleanQuery = query.replace(/"([^"]+)"/g, "'$1'");
-  // Map ? bindings to $1, $2 etc.
   return cleanQuery.replace(/\?/g, () => `$${paramCount++}`);
+}
+
+let queryQueue = [];
+let processingQueue = false;
+
+function enqueueQuery(task) {
+  queryQueue.push(task);
+  if (!processingQueue) {
+    processingQueue = true;
+    processNextQuery();
+  }
+}
+
+function processNextQuery() {
+  if (queryQueue.length === 0) {
+    processingQueue = false;
+    return;
+  }
+  const task = queryQueue.shift();
+  task(() => {
+    processNextQuery();
+  });
 }
 
 const db = {
   get: (q, p = [], cb) => {
     if (typeof p === 'function') { cb = p; p = []; }
-    const pgQuery = compilePostgresQuery(q);
-    pool.query(pgQuery, p, (err, res) => {
-      if (err) console.error('[Supabase GET Error]:', err.message, pgQuery);
-      let formatted = res && res.rows.length > 0 ? formatRows(res.rows)[0] : null;
-      if (cb) cb(err, formatted);
+    enqueueQuery((next) => {
+      const pgQuery = compilePostgresQuery(q);
+      pool.query(pgQuery, p, (err, res) => {
+        if (err) console.error('[Supabase GET Error]:', err.message, pgQuery);
+        let formatted = res && res.rows.length > 0 ? formatRows(res.rows)[0] : null;
+        if (cb) cb(err, formatted);
+        next();
+      });
     });
   },
 
   all: (q, p = [], cb) => {
     if (typeof p === 'function') { cb = p; p = []; }
-    const pgQuery = compilePostgresQuery(q);
-    pool.query(pgQuery, p, (err, res) => {
-      if (err) console.error('[Supabase ALL Error]:', err.message, pgQuery);
-      if (cb) cb(err, res ? formatRows(res.rows) : []);
+    enqueueQuery((next) => {
+      const pgQuery = compilePostgresQuery(q);
+      pool.query(pgQuery, p, (err, res) => {
+        if (err) console.error('[Supabase ALL Error]:', err.message, pgQuery);
+        if (cb) cb(err, res ? formatRows(res.rows) : []);
+        next();
+      });
     });
   },
 
   run: (q, p = [], cb) => {
     if (typeof p === 'function') { cb = p; p = []; }
-    let pgQuery = compilePostgresQuery(q);
-    
-    // Postgres strict Pool blocks - silently swallow standalone SQLite transaction controls
-    const upperQ = pgQuery.trim().toUpperCase();
-    if (upperQ === 'BEGIN TRANSACTION' || upperQ === 'COMMIT' || upperQ === 'ROLLBACK') {
-      if (cb) cb.call({}, null);
-      return;
-    }
-
-    const isInsert = upperQ.startsWith('INSERT');
-    if (isInsert && !pgQuery.toUpperCase().includes('RETURNING')) {
-      pgQuery += ' RETURNING id';
-    }
-
-    pool.query(pgQuery, p, function(err, res) {
-      if (err) console.error('[Supabase RUN Error]:', err.message, pgQuery);
-      if (cb) {
-        const context = (isInsert && res && res.rows.length > 0) ? { lastID: res.rows[0].id } : {};
-        cb.call(context, err);
+    enqueueQuery((next) => {
+      let pgQuery = compilePostgresQuery(q);
+      const upperQ = pgQuery.trim().toUpperCase();
+      
+      if (upperQ === 'BEGIN TRANSACTION' || upperQ === 'COMMIT' || upperQ === 'ROLLBACK') {
+        if (cb) cb.call({}, null);
+        next();
+        return;
       }
+
+      const isInsert = upperQ.startsWith('INSERT');
+      if (isInsert && !pgQuery.toUpperCase().includes('RETURNING')) {
+        pgQuery += ' RETURNING id';
+      }
+
+      pool.query(pgQuery, p, function(err, res) {
+        if (err) console.error('[Supabase RUN Error]:', err.message, pgQuery);
+        if (cb) {
+          const context = (isInsert && res && res.rows.length > 0) ? { lastID: res.rows[0].id } : {};
+          cb.call(context, err);
+        }
+        next();
+      });
     });
+  },
+
+  prepare: (query) => {
+    return {
+      run: function(...args) {
+        let callback = null;
+        if (args.length > 0 && typeof args[args.length - 1] === 'function') {
+           callback = args.pop();
+        }
+        db.run(query, args, callback);
+      },
+      finalize: function() {}
+    };
   },
 
   serialize: (cb) => {
