@@ -2,7 +2,6 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const rooms = require('./rooms');
 
@@ -15,8 +14,8 @@ app.use(express.json());
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*', methods: ['GET', 'POST'] } });
 
-const dbPath = path.resolve(__dirname, 'ipl.db');
-const db = new sqlite3.Database(dbPath);
+// Inject Shim Proxy Database connected to Supabase
+const db = require('./dbShim');
 
 // Per-room auction states
 const roomAuctionStates = new Map();
