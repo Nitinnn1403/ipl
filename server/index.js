@@ -561,18 +561,6 @@ io.on('connection', (socket) => {
     socket.leave(roomCode);
   });
 
-  socket.on('SIMULATE_MATCH', ({ roomCode, matchId, odId }) => {
-    // Prevent unauthorized triggers if needed, but for now allow anyone in room
-    simulateMatch(roomCode, matchId, (result) => {
-      if (result.error) {
-        socket.emit('error', result.error);
-        return;
-      }
-
-      // Broadcast match completion to all room clients to trigger hot-reloads
-      io.to(roomCode).emit('MATCH_COMPLETED', { matchId, result });
-    });
-  });
 
   socket.on('START_TEAM_SELECTION', ({ roomCode, odId }) => {
     const result = rooms.startTeamSelection(roomCode, odId, DEBUG_BYPASS_3_PLAYERS);

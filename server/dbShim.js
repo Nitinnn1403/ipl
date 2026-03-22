@@ -22,7 +22,10 @@ const camelCaseMap = {
   matchid: 'matchId', isimpactplayer: 'isImpactPlayer',
   runsfor: 'runsFor', oversfor: 'oversFor',
   runsagainst: 'runsAgainst', oversagainst: 'oversAgainst',
-  noresult: 'noResult'
+  noresult: 'noResult',
+  squadsize: 'squadSize', overseascount: 'overseasCount',
+  team1name: 'team1Name', team2name: 'team2Name',
+  team1logo: 'team1Logo', team2logo: 'team2Logo', winnername: 'winnerName'
 };
 
 function formatRows(rows) {
