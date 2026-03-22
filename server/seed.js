@@ -27,19 +27,19 @@ async function runSeed() {
       name TEXT NOT NULL,
       role TEXT,
       country TEXT,
-      "basePrice" INTEGER,
-      "currentBid" INTEGER DEFAULT 0,
-      "soldTo" TEXT DEFAULT NULL,
+      basePrice INTEGER,
+      currentBid INTEGER DEFAULT 0,
+      soldTo TEXT DEFAULT NULL,
       status TEXT DEFAULT 'AVAILABLE',
-      "setName" TEXT,
-      "imageUrl" TEXT,
-      "battingRating" INTEGER DEFAULT 50,
-      "bowlingRating" INTEGER DEFAULT 50,
+      setName TEXT,
+      imageUrl TEXT,
+      battingRating INTEGER DEFAULT 50,
+      bowlingRating INTEGER DEFAULT 50,
       specialty TEXT,
-      "bowlingType" TEXT,
+      bowlingType TEXT,
       age INTEGER,
-      "isXI" INTEGER DEFAULT 0,
-      "isImpactSub" INTEGER DEFAULT 0
+      isXI INTEGER DEFAULT 0,
+      isImpactSub INTEGER DEFAULT 0
     )`);
 
     // Create teams table
@@ -47,18 +47,18 @@ async function runSeed() {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       purse INTEGER,
-      "logoUrl" TEXT,
-      "rtmCardsRemaining" INTEGER DEFAULT 2
+      logoUrl TEXT,
+      rtmCardsRemaining INTEGER DEFAULT 2
     )`);
 
     // Create retentions table
     await client.query(`CREATE TABLE retentions (
       id SERIAL PRIMARY KEY,
-      "teamId" TEXT REFERENCES teams(id),
-      "playerId" INTEGER REFERENCES players(id),
-      "retentionType" TEXT,
+      teamId TEXT REFERENCES teams(id),
+      playerId INTEGER REFERENCES players(id),
+      retentionType TEXT,
       price INTEGER,
-      "slotNumber" INTEGER
+      slotNumber INTEGER
     )`);
 
     // Create tournaments table
@@ -67,55 +67,55 @@ async function runSeed() {
       name TEXT,
       year INTEGER,
       status TEXT DEFAULT 'PENDING',
-      "roomCode" TEXT
+      roomCode TEXT
     )`);
 
     // Create matches table
     await client.query(`CREATE TABLE matches (
       id SERIAL PRIMARY KEY,
-      "tournamentId" INTEGER REFERENCES tournaments(id),
-      "matchNumber" INTEGER,
-      "team1Id" TEXT REFERENCES teams(id),
-      "team2Id" TEXT REFERENCES teams(id),
-      "team1Score" INTEGER DEFAULT 0,
-      "team1Wickets" INTEGER DEFAULT 0,
-      "team1Overs" REAL DEFAULT 0,
-      "team2Score" INTEGER DEFAULT 0,
-      "team2Wickets" INTEGER DEFAULT 0,
-      "team2Overs" REAL DEFAULT 0,
-      "winnerId" TEXT,
+      tournamentId INTEGER REFERENCES tournaments(id),
+      matchNumber INTEGER,
+      team1Id TEXT REFERENCES teams(id),
+      team2Id TEXT REFERENCES teams(id),
+      team1Score INTEGER DEFAULT 0,
+      team1Wickets INTEGER DEFAULT 0,
+      team1Overs REAL DEFAULT 0,
+      team2Score INTEGER DEFAULT 0,
+      team2Wickets INTEGER DEFAULT 0,
+      team2Overs REAL DEFAULT 0,
+      winnerId TEXT,
       status TEXT DEFAULT 'SCHEDULED',
       stage TEXT DEFAULT 'league',
-      "tossWinnerId" TEXT,
-      "tossDecision" TEXT,
+      tossWinnerId TEXT,
+      tossDecision TEXT,
       venue TEXT
     )`);
 
     // Create standings table
     await client.query(`CREATE TABLE standings (
       id SERIAL PRIMARY KEY,
-      "tournamentId" INTEGER REFERENCES tournaments(id),
-      "teamId" TEXT REFERENCES teams(id),
+      tournamentId INTEGER REFERENCES tournaments(id),
+      teamId TEXT REFERENCES teams(id),
       played INTEGER DEFAULT 0,
       won INTEGER DEFAULT 0,
       lost INTEGER DEFAULT 0,
       tied INTEGER DEFAULT 0,
-      "noResult" INTEGER DEFAULT 0,
+      noResult INTEGER DEFAULT 0,
       points INTEGER DEFAULT 0,
-      "runsFor" INTEGER DEFAULT 0,
-      "oversFor" REAL DEFAULT 0,
-      "runsAgainst" INTEGER DEFAULT 0,
-      "oversAgainst" REAL DEFAULT 0,
+      runsFor INTEGER DEFAULT 0,
+      oversFor REAL DEFAULT 0,
+      runsAgainst INTEGER DEFAULT 0,
+      oversAgainst REAL DEFAULT 0,
       nrr REAL DEFAULT 0
     )`);
 
     // Create match_xi table
     await client.query(`CREATE TABLE match_xi (
       id SERIAL PRIMARY KEY,
-      "matchId" INTEGER REFERENCES matches(id),
-      "teamId" TEXT REFERENCES teams(id),
-      "playerId" INTEGER REFERENCES players(id),
-      "isImpactPlayer" INTEGER DEFAULT 0
+      matchId INTEGER REFERENCES matches(id),
+      teamId TEXT REFERENCES teams(id),
+      playerId INTEGER REFERENCES players(id),
+      isImpactPlayer INTEGER DEFAULT 0
     )`);
 
     console.log("Tables created successfully! Injecting data...");
@@ -135,7 +135,7 @@ async function runSeed() {
 
     for (const t of teamsData) {
       await client.query(
-        `INSERT INTO teams (id, name, purse, "logoUrl") VALUES ($1, $2, $3, $4)`,
+        `INSERT INTO teams (id, name, purse, logoUrl) VALUES ($1, $2, $3, $4)`,
         [t.id, t.name, t.purse, t.logoUrl]
       );
     }
@@ -161,7 +161,7 @@ async function runSeed() {
 
     for (const p of players) {
       await client.query(
-        `INSERT INTO players (name, role, country, "basePrice", "setName", "imageUrl", "battingRating", "bowlingRating", specialty, "bowlingType", age)
+        `INSERT INTO players (name, role, country, basePrice, setName, imageUrl, battingRating, bowlingRating, specialty, bowlingType, age)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
         [p.name, p.role, p.country, p.basePrice, p.setName, p.imageUrl, p.battingRating, p.bowlingRating, p.specialty, p.bowlingType, p.age]
       );
