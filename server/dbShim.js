@@ -69,7 +69,14 @@ const db = {
     if (typeof p === 'function') { cb = p; p = []; }
     let pgQuery = compilePostgresQuery(q);
     
-    const isInsert = pgQuery.trim().toUpperCase().startsWith('INSERT');
+    // Postgres strict Pool blocks - silently swallow standalone SQLite transaction controls
+    const upperQ = pgQuery.trim().toUpperCase();
+    if (upperQ === 'BEGIN TRANSACTION' || upperQ === 'COMMIT' || upperQ === 'ROLLBACK') {
+      if (cb) cb.call({}, null);
+      return;
+    }
+
+    const isInsert = upperQ.startsWith('INSERT');
     if (isInsert && !pgQuery.toUpperCase().includes('RETURNING')) {
       pgQuery += ' RETURNING id';
     }
