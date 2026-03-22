@@ -2,7 +2,7 @@ require('dotenv').config();
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: (process.env.DATABASE_URL || '').trim(),
   ssl: { rejectUnauthorized: false }
 });
 
@@ -71,7 +71,7 @@ const db = {
     enqueueQuery((next) => {
       const pgQuery = compilePostgresQuery(q);
       pool.query(pgQuery, p, (err, res) => {
-        if (err) console.error('[Supabase GET Error]:', err.message, pgQuery);
+        if (err) console.error('[Supabase GET Error]:\n', err, '\nQuery:', pgQuery);
         let formatted = res && res.rows.length > 0 ? formatRows(res.rows)[0] : null;
         if (cb) cb(err, formatted);
         next();
@@ -84,7 +84,7 @@ const db = {
     enqueueQuery((next) => {
       const pgQuery = compilePostgresQuery(q);
       pool.query(pgQuery, p, (err, res) => {
-        if (err) console.error('[Supabase ALL Error]:', err.message, pgQuery);
+        if (err) console.error('[Supabase ALL Error]:\n', err, '\nQuery:', pgQuery);
         if (cb) cb(err, res ? formatRows(res.rows) : []);
         next();
       });
@@ -109,7 +109,7 @@ const db = {
       }
 
       pool.query(pgQuery, p, function(err, res) {
-        if (err) console.error('[Supabase RUN Error]:', err.message, pgQuery);
+        if (err) console.error('[Supabase RUN Error]:\n', err, '\nQuery:', pgQuery);
         if (cb) {
           const context = (isInsert && res && res.rows.length > 0) ? { lastID: res.rows[0].id } : {};
           cb.call(context, err);
